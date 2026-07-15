@@ -2,8 +2,7 @@
 
 A simple, clean Streamlit web app for fetching YouTube video details and downloading video, video-only, or audio-only (MP3) files — with selectable quality and a live progress bar.
 
-Built with [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) and [Streamlit](https://streamlit.io/).
-
+Built with [`yt-dlp`] and [Streamlit]
 ---
 
 ## 📸 Screenshots
@@ -12,7 +11,8 @@ Built with [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) and [Streamlit](https://
 
 | Fetch Video | Download Options |
 |---|---|
-| ![Fetch video screenshot](screenshots/fetch-video.png) | ![Download options screenshot](screenshots/download-options.png) |
+| ![Fetch video screenshot](screenshots/fetch-video.png) | ![Download options screenshot] <img width="1219" height="714" alt="image" src="https://github.com/user-attachments/assets/7bceb1e7-0c79-4ae1-a6dd-199e96c1a472" />
+ |
 
 <!-- Add more as needed, e.g.: -->
 <!-- ![App demo](screenshots/demo.gif) -->
