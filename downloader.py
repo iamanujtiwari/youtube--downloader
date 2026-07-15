@@ -37,11 +37,68 @@ def check_ffmpeg():
     return get_ffmpeg_location() != "MISSING"
 
 
+# Shared options to reduce YouTube 403 Forbidden errors.
+# Forces yt-dlp to try the Android client (less restricted) alongside the
+# normal web client, sets a standard browser user-agent, and prevents
+# accidentally pulling an entire playlist from a single video link.
+COMMON_YDL_OPTS = {
+    "noplaylist": True,
+    "extractor_args": {
+        "youtube": {
+            "player_client": ["android", "web"],
+        }
+    },
+    "http_headers": {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/138.0 Safari/537.36"
+        )
+    },
+}
+
+
+def get_extra_ydl_opts():
+    """
+    Optional proxy / cookies support, mainly to work around YouTube blocking
+    datacenter IPs (e.g. Streamlit Community Cloud) more aggressively than
+    residential ones. Configure via Streamlit secrets or environment variables;
+    both are entirely optional and ignored if not set.
+
+    Streamlit secrets.toml example:
+        YT_PROXY_URL = "http://user:pass@proxy-host:port"
+        YT_COOKIES_FILE = "cookies.txt"
+    """
+    extra = {}
+
+    proxy_url = None
+    cookies_file = None
+
+    try:
+        import streamlit as st
+        proxy_url = st.secrets.get("YT_PROXY_URL", None)
+        cookies_file = st.secrets.get("YT_COOKIES_FILE", None)
+    except Exception:
+        pass  # not running in Streamlit, or no secrets configured
+
+    proxy_url = proxy_url or os.environ.get("YT_PROXY_URL")
+    cookies_file = cookies_file or os.environ.get("YT_COOKIES_FILE")
+
+    if proxy_url:
+        extra["proxy"] = proxy_url
+
+    if cookies_file and os.path.isfile(cookies_file):
+        extra["cookiefile"] = cookies_file
+
+    return extra
+
+
 def get_video_info(url):
     """Fetch metadata (title, thumbnail, formats, etc.) without downloading."""
     ydl_opts = {
         "quiet": True,
-        "skip_download": True
+        "skip_download": True,
+        **COMMON_YDL_OPTS,
+        **get_extra_ydl_opts(),
     }
     with YoutubeDL(ydl_opts) as ydl:
         return ydl.extract_info(url, download=False)
@@ -82,20 +139,24 @@ def download_video(url, mode="best", resolution=None, progress_hook=None):
 
     if mode == "best":
         fmt = (
-            f"bestvideo[height<={resolution}]+bestaudio/best[height<={resolution}]"
-            if resolution else "bestvideo+bestaudio/best"
+            f"bv*[height<={resolution}]+ba/b[height<={resolution}]"
+            if resolution else "bv*+ba/b"
         )
         ydl_opts = {
             "format": fmt,
             "merge_output_format": "mp4",
             "outtmpl": output_path,
+            **COMMON_YDL_OPTS,
+            **get_extra_ydl_opts(),
         }
 
     elif mode == "video_only":
-        fmt = f"bestvideo[height<={resolution}]" if resolution else "bestvideo"
+        fmt = f"bv*[height<={resolution}]" if resolution else "bv*"
         ydl_opts = {
             "format": fmt,
             "outtmpl": output_path,
+            **COMMON_YDL_OPTS,
+            **get_extra_ydl_opts(),
         }
 
     elif mode == "audio_only":
@@ -107,6 +168,8 @@ def download_video(url, mode="best", resolution=None, progress_hook=None):
                 "preferredcodec": "mp3",
                 "preferredquality": "192",
             }],
+            **COMMON_YDL_OPTS,
+            **get_extra_ydl_opts(),
         }
 
     else:
