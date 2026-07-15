@@ -11,7 +11,7 @@ Built with [`yt-dlp`] and [Streamlit]
 
 | Fetch Video | Download Options |
 |---|---|
-| ![Fetch video screenshot](screenshots/fetch-video.png) | ![Download options screenshot] <img width="1219" height="714" alt="image" src="https://github.com/user-attachments/assets/7bceb1e7-0c79-4ae1-a6dd-199e96c1a472" />
+| ![Fetch video screenshot](screenshots/fetch-video.png) | ![Download options screenshot] 
  |
 
 <!-- Add more as needed, e.g.: -->
