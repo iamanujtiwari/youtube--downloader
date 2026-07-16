@@ -11,7 +11,7 @@ Built with [`yt-dlp`] and [Streamlit]
 
 | Fetch Video | Download Options |
 |---|---|
-| ![Fetch video screenshot](screenshots/fetch-video.png) | ![Download options screenshot] 
+| ![Fetch video screenshot](screenshots/fetch-video.png) |  ![Download options screenshot] 
  |
 
 <!-- Add more as needed, e.g.: -->
