@@ -14,7 +14,7 @@ Built with [`yt-dlp`] and [`Streamlit`]
 <!-- Add your screenshots below. Save images in a folder like `screenshots/` in your repo root, then update the paths. -->
 
 |                                                                          Fetch Video 
-|                                                     ![Fetch video screenshot]https://github.com/user-attachments/assets/7bb27c68-f726-438a-8543-d15c5937c8bd  
+|                                                     ![Fetch video screenshot]   https://github.com/user-attachments/assets/7bb27c68-f726-438a-8543-d15c5937c8bd  
 
 
 ---
