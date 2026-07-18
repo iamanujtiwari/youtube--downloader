@@ -1,3 +1,7 @@
+
+
+
+
 # 🎬 YouTube Downloader
 
 A simple, clean Streamlit web app for fetching YouTube video details and downloading video, video-only, or audio-only (MP3) files — with selectable quality and a live progress bar.
@@ -10,10 +14,8 @@ Built with [`yt-dlp`] and [`Streamlit`]
 <!-- Add your screenshots below. Save images in a folder like `screenshots/` in your repo root, then update the paths. -->
 
 |                                                                          Fetch Video 
-|                                                     ![Fetch video screenshot](screenshots/fetch-video.png) |  
+|                                                     ![Fetch video screenshot]https://github.com/user-attachments/assets/7bb27c68-f726-438a-8543-d15c5937c8bd  
 
-<!-- Add more as needed, e.g.: -->
-<!-- ![App demo](screenshots/demo.gif) -->
 
 ---
 
@@ -28,8 +30,6 @@ Built with [`yt-dlp`] and [`Streamlit`]
 - 📊 Live download progress bar
 - 🧹 Files are served straight from memory and deleted from the server immediately after — nothing lingers on disk
 - 🖥️ Works locally on Windows/Mac/Linux and deploys cleanly to Streamlit Community Cloud
-
----
 
 ---
 
