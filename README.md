@@ -9,7 +9,7 @@ Built with [`yt-dlp`] and [`Streamlit`]
 
 <!-- Add your screenshots below. Save images in a folder like `screenshots/` in your repo root, then update the paths. -->
 
-| Fetch Video | Download Options |
+|                                                                          Fetch Video 
 |---|---|
 |                                                     ![Fetch video screenshot](screenshots/fetch-video.png) |  
 
@@ -87,8 +87,7 @@ Refreshing the page is safe and will not close the application.
 | Windows SmartScreen warning | Click **More Info → Run Anyway** if you trust the application. |
 | Browser doesn't open | Open the address shown in the console window (usually `http://localhost:8501`). |
 | App is still running after closing | Wait about 10 seconds or close **YouTubeDownloader.exe** from Task Manager. |
-| Video information doesn't load or fetching fails | Temporary YouTube IP rate limit or IP block | Wait a few seconds and click **Fetch Video** again. In most cases, the request succeeds on the next attempt. |
-
+| Fetch Video doesn't return results | Temporary YouTube IP rate limit or request block | Wait a few seconds and click **Fetch Video** again. It usually works on the next attempt. |
 
 ---
 
