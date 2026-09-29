@@ -1,50 +1,50 @@
-# Python
+# ---------- Python ----------
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.so
 *.egg-info/
+.pytest_cache/
 
-# Virtual environments
+# ---------- Virtual environments ----------
 venv/
 .venv/
 env/
-ENV/
+buildenv/
 
-# VS Code
-.vscode/
-
-# PyInstaller
+# ---------- PyInstaller output ----------
 build/
 dist/
-*.spec
+# Keep YouTubeDownloader.spec (it is the build config)
 
-# Binary files
-bin/
-
-# Documentation
-BUILD_INSTRUCTIONS.md
-
-# Downloads
+# ---------- App runtime files ----------
 downloads/
+*.mp4
+*.mp3
+*.webm
+*.m4a
+*.part
+*.ytdl
 
-# Logs
-*.log
+# ---------- Large bundled binaries ----------
+# ffmpeg.exe is over GitHub's 100 MB file limit. Download these
+# yourself and place them in ./bin before building the exe.
+bin/ffmpeg.exe
+bin/node.exe
+bin/deno.exe
+/ffmpeg.exe
+/node.exe
 
-# Environment variables
-.env
-
-# Python cache
-.pytest_cache/
-.mypy_cache/
-
-# Streamlit
+# ---------- Streamlit ----------
 .streamlit/secrets.toml
 
-# IDE
+# ---------- IDE / OS ----------
+.vscode/
 .idea/
-
-# OS files
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# ---------- Logs / temp ----------
+*.log
+*.tmp

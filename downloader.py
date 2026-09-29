@@ -1,16 +1,24 @@
 from yt_dlp import YoutubeDL
+from yt_dlp.utils import DownloadError
+import importlib.util
 import os
 import shutil
 import sys
+import time
 
 DOWNLOAD_DIR = "downloads"
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
-# Folder where a bundled ffmpeg binary can live, relative to this file.
-# Put the executable at:  bin/ffmpeg        (Mac/Linux)
-#                         bin/ffmpeg.exe    (Windows)
+# Folder where bundled helper binaries can live, relative to this file.
+# Put the executables at:  bin/ffmpeg, bin/deno        (Mac/Linux)
+#                          bin/ffmpeg.exe, bin/deno.exe (Windows)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BUNDLED_FFMPEG_DIR = os.path.join(BASE_DIR, "bin")
+BUNDLED_BIN_DIR = BUNDLED_FFMPEG_DIR
+
+# YouTube sometimes answers a valid-looking stream URL with HTTP 403. A fresh
+# extraction (which produces fresh signed URLs) usually fixes it, so we retry.
+MAX_DOWNLOAD_ATTEMPTS = 3
 
 
 def get_ffmpeg_location():
@@ -37,11 +45,65 @@ def check_ffmpeg():
     return get_ffmpeg_location() != "MISSING"
 
 
+def get_js_runtimes():
+    """
+    Preference order:
+      1. deno / node bundled inside ./bin
+      2. deno / node / bun found on the system PATH
+    Returns a dict in the format yt-dlp's `js_runtimes` option expects,
+    or None if no runtime was found.
+    """
+    ext = ".exe" if sys.platform.startswith("win") else ""
+
+    # 1. Bundled binaries
+    for name in ("deno", "node"):
+        bundled_path = os.path.join(BUNDLED_BIN_DIR, name + ext)
+        if os.path.isfile(bundled_path):
+            return {name: {"path": bundled_path}}
+
+    # 2. System PATH
+    for name in ("deno", "node", "bun"):
+        if shutil.which(name):
+            return {name: {}}
+
+    return None
+
+def get_js_support_problem():
+    """
+    Return a human-readable description of what's missing for reliable
+    YouTube downloads, or None if everything needed is present.
+    """
+    missing = []
+    if get_js_runtimes() is None:
+        missing.append("a JavaScript runtime (Deno)")
+    if importlib.util.find_spec("yt_dlp_ejs") is None:
+        missing.append("the yt-dlp-ejs package")
+
+    if not missing:
+        return None
+    return " and ".join(missing)
+
+
+def _base_opts():
+    """Options shared by every yt-dlp call in this app."""
+    opts = {
+        "color": "never",          # no ANSI codes like [0;31m in error text
+        "retries": 5,
+        "fragment_retries": 5,
+        "extractor_retries": 3,
+    }
+    js_runtimes = get_js_runtimes()
+    if js_runtimes:
+        opts["js_runtimes"] = js_runtimes
+    return opts
+
+
 def get_video_info(url):
     """Fetch metadata (title, thumbnail, formats, etc.) without downloading."""
     ydl_opts = {
+        **_base_opts(),
         "quiet": True,
-        "skip_download": True
+        "skip_download": True,
     }
     with YoutubeDL(ydl_opts) as ydl:
         return ydl.extract_info(url, download=False)
@@ -112,20 +174,46 @@ def download_video(url, mode="best", resolution=None, progress_hook=None):
     else:
         raise ValueError("mode must be 'best', 'video_only', or 'audio_only'")
 
+    ydl_opts.update(_base_opts())
+
     if progress_hook:
         ydl_opts["progress_hooks"] = [progress_hook]
 
     if ffmpeg_location and ffmpeg_location != "MISSING":
         ydl_opts["ffmpeg_location"] = ffmpeg_location
 
-    with YoutubeDL(ydl_opts) as ydl:
-        result = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(result)
+    last_error = None
+    for attempt in range(1, MAX_DOWNLOAD_ATTEMPTS + 1):
+        try:
+            # A brand-new YoutubeDL each attempt = a fresh extraction and
+            # fresh signed stream URLs, which is what fixes most 403s.
+            with YoutubeDL(ydl_opts) as ydl:
+                result = ydl.extract_info(url, download=True)
+                filename = ydl.prepare_filename(result)
+            break
 
-        # Correct the extension based on post-processing outcome
-        if mode == "audio_only":
-            filename = os.path.splitext(filename)[0] + ".mp3"
-        elif mode == "best":
-            filename = os.path.splitext(filename)[0] + ".mp4"
+        except DownloadError as e:
+            if "403" not in str(e):
+                raise
+            last_error = e
+            if attempt < MAX_DOWNLOAD_ATTEMPTS:
+                time.sleep(2 * attempt)
+    else:
+        problem = get_js_support_problem()
+        hint = (
+            f"Missing: {problem}. Install it and try again."
+            if problem else
+            "Update yt-dlp (pip install -U \"yt-dlp[default]\") and try again."
+        )
+        raise RuntimeError(
+            f"YouTube rejected the download (HTTP 403) after "
+            f"{MAX_DOWNLOAD_ATTEMPTS} attempts. {hint}"
+        ) from last_error
 
-        return filename
+    # Correct the extension based on post-processing outcome
+    if mode == "audio_only":
+        filename = os.path.splitext(filename)[0] + ".mp3"
+    elif mode == "best":
+        filename = os.path.splitext(filename)[0] + ".mp4"
+
+    return filename

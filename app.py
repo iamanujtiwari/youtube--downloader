@@ -1,7 +1,14 @@
 import streamlit as st
 import shutil
 import os
-from downloader import DOWNLOAD_DIR, get_video_info, get_available_resolutions, download_video, check_ffmpeg
+import os
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+NODE_PATH = os.path.join(BASE_DIR, "bin", "node.exe")
+from downloader import (
+    DOWNLOAD_DIR, get_video_info, get_available_resolutions,
+    download_video, check_ffmpeg, get_js_support_problem,
+)
 from utils import show_thumbnail, show_other_details, make_progress_hook
 from heartbeat import inject_close_watcher
 
@@ -9,7 +16,7 @@ from heartbeat import inject_close_watcher
 
 st.set_page_config(
     page_title="YouTube Downloader",
-    page_icon="🎬",
+    page_icon="ico1.ico",
     layout="wide"
 )
 
@@ -19,13 +26,22 @@ inject_close_watcher()
 
 # ---------------- Title ---------------- #
 
-st.title("🎬 YouTube Downloader")
+st.image("ico1.png", width=80) 
+st.title("YouTube Downloader")
 st.write("Paste a YouTube URL to view video details and download it.")
 
 if not check_ffmpeg():
     st.warning(
         "⚠️ ffmpeg was not found (checked ./bin and system PATH). Video+Audio "
         "and Audio-only downloads will fail until it's installed or bundled."
+    )
+
+js_problem = get_js_support_problem()
+if js_problem:
+    st.warning(
+        f"⚠️ Missing {js_problem}. YouTube now requires it, and without it "
+        "downloads often fail with HTTP 403. Run `pip install -U \"yt-dlp[default]\"` "
+        "and install Node.js 22+ (https://nodejs.org) or Deno, or put node.exe in ./bin."
     )
 
 st.divider()
@@ -139,5 +155,6 @@ if st.session_state.info:
             st.error(f"Error downloading video: {e}")
             st.info(
                 "If this mentions ffmpeg, make sure it's installed and on your PATH "
-                "(needed to merge video+audio or extract MP3 audio)."
+                "(needed to merge video+audio or extract MP3 audio). "
+                "If it mentions HTTP 403, update yt-dlp and make sure Node.js 22+ (or Deno) is installed."
             )
