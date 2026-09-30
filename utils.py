@@ -88,3 +88,16 @@ def make_progress_hook(progress_bar, status_text):
             status_text.error("❌ Download failed.")
 
     return hook
+
+def make_transcode_hook(progress_bar, status_text, label="Converting"):
+    """
+    Progress callback for the ffmpeg re-encode step (H.264 / HEVC).
+    Receives a float from 0.0 to 1.0.
+    """
+
+    def hook(fraction):
+        fraction = min(max(fraction, 0.0), 1.0)
+        progress_bar.progress(fraction)
+        status_text.write(f"🎞️ {label}... {fraction * 100:.1f}%")
+
+    return hook

@@ -1,15 +1,16 @@
 import streamlit as st
 import shutil
 import os
-import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 NODE_PATH = os.path.join(BASE_DIR, "bin", "node.exe")
 from downloader import (
     DOWNLOAD_DIR, get_video_info, get_available_resolutions,
-    download_video, check_ffmpeg, get_js_support_problem,
+    download_video, check_ffmpeg, get_js_support_problem, ffmpeg_has_encoder,
 )
-from utils import show_thumbnail, show_other_details, make_progress_hook
+from utils import (
+    show_thumbnail, show_other_details, make_progress_hook, make_transcode_hook,
+)
 from heartbeat import inject_close_watcher
 
 # ---------------- Page Config ---------------- #
@@ -53,14 +54,17 @@ if "info" not in st.session_state:
 
 # ---------------- URL Input ---------------- #
 
-url = st.text_input(
-    "YouTube URL",
-    placeholder="https://www.youtube.com/watch?v=xxxxxxxx"
-)
+# A form lets the Enter key submit the URL, same as clicking the button.
+with st.form("fetch_form", border=False):
+    url = st.text_input(
+        "YouTube URL",
+        placeholder="https://www.youtube.com/watch?v=xxxxxxxx"
+    )
+    fetch_clicked = st.form_submit_button("🔍 Fetch Video", use_container_width=True)
 
-# ---------------- Fetch Button ---------------- #
+# ---------------- Fetch ---------------- #
 
-if st.button("🔍 Fetch Video", use_container_width=True):
+if fetch_clicked:
 
     if not url.strip():
         st.warning("Please enter a YouTube URL.")
@@ -69,6 +73,7 @@ if st.button("🔍 Fetch Video", use_container_width=True):
     try:
         with st.spinner("Fetching video information..."):
             st.session_state.info = get_video_info(url)
+            st.session_state.url = url
 
     except Exception as e:
         st.error(f"Error fetching video: {e}")
@@ -90,7 +95,7 @@ if st.session_state.info:
     st.divider()
     st.subheader("⬇️ Download Options")
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
 
     with col1:
         mode_label = st.selectbox(
@@ -119,15 +124,50 @@ if st.session_state.info:
         else:
             st.write("Quality: Best available (audio, 192 kbps MP3)")
 
+    with col3:
+        codec = "auto"
+
+        if mode in ("best", "video_only"):
+            codec_map = {
+                "Auto (fastest, no re-encode)": "auto",
+                "MP4 · H.264/AVC + AAC (most compatible)": "h264",
+                "MP4 · HEVC/H.265 + AAC (smaller files)": "hevc",
+            }
+            codec_label = st.selectbox("Format / codec", options=list(codec_map))
+            codec = codec_map[codec_label]
+
+            if codec == "h264":
+                st.caption(
+                    "Uses YouTube's native H.264/AAC when available. "
+                    "Higher resolutions (e.g. 4K) are re-encoded."
+                )
+            elif codec == "hevc":
+                st.caption(
+                    "YouTube doesn't serve HEVC, so the video is re-encoded "
+                    "with ffmpeg. This is slower than a normal download."
+                )
+                if not ffmpeg_has_encoder("libx265"):
+                    st.warning(
+                        "⚠️ Your ffmpeg build has no libx265 encoder, so HEVC "
+                        "will fail. Use a full/essentials ffmpeg build."
+                    )
+        else:
+            st.write("Format: MP3")
+
     if st.button("⬇️ Download", use_container_width=True):
         progress_bar = st.progress(0.0)
         status_text = st.empty()
         hook = make_progress_hook(progress_bar, status_text)
+        codec_names = {"h264": "Converting to H.264 + AAC", "hevc": "Encoding HEVC + AAC"}
+        convert_hook = make_transcode_hook(
+            progress_bar, status_text, codec_names.get(codec, "Converting")
+        )
 
         try:
             with st.spinner("Preparing download..."):
                 filepath = download_video(
-                    url, mode=mode, resolution=resolution, progress_hook=hook
+                    st.session_state.get("url", url), mode=mode, resolution=resolution, progress_hook=hook,
+                    codec=codec, transcode_hook=convert_hook,
                 )
 
             st.success("✅ Download complete!")

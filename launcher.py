@@ -98,6 +98,10 @@ def _watchdog():
 
 
 def main():
+    # Make relative paths (ico1.ico, ico1.png, app.py's own imports) resolve
+    # correctly no matter which folder the exe is double-clicked from.
+    os.chdir(resource_path("."))
+
     streamlit_port = find_free_port()
     heartbeat_port = find_free_port()
     os.environ["APP_HEARTBEAT_PORT"] = str(heartbeat_port)
